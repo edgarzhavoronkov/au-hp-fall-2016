@@ -87,9 +87,9 @@ int main(int argc, char **argv)
 			return img.target_intensity_points(target_intensity);
 		};
 
-		function_node<image, points, rejecting> maximizer(g, unlimited, get_max_intensity);
-		function_node<image, points, rejecting> minimizer(g, unlimited, get_min_intensity);
-		function_node<image, points, rejecting> matcher(g, unlimited, get_target_intensity);
+		function_node<image, points, queueing> maximizer(g, serial, get_max_intensity);
+		function_node<image, points, queueing> minimizer(g, serial, get_min_intensity);
+		function_node<image, points, queueing> matcher(g, serial, get_target_intensity);
 
 		join_node<tuple<image, points, points, points>> join(g);
 
@@ -104,7 +104,7 @@ int main(int argc, char **argv)
 			return img;
 		};
 
-		function_node<tuple<image, points, points, points>, image, rejecting> marker(g, unlimited, mark_found_points);
+		function_node<tuple<image, points, points, points>, image, queueing> marker(g, serial, mark_found_points);
 
 		broadcast_node<image> broadcast1(g);
 
@@ -114,13 +114,13 @@ int main(int argc, char **argv)
 			return res;
 		};
 
-		function_node<image, image, rejecting> inverter(g, unlimited, get_inverted_img);
+		function_node<image, image, queueing> inverter(g, serial, get_inverted_img);
 
 		auto get_mean_intensity = [] (const image& img) -> double {
 			return img.mean_intensity();
 		};
 
-		function_node<image, double> meanimizer(g, unlimited, get_mean_intensity);
+		function_node<image, double, queueing> meanimizer(g, serial, get_mean_intensity);
 
 		make_edge(source, limiter);
 		make_edge(limiter, broadcast);
@@ -151,7 +151,7 @@ int main(int argc, char **argv)
 				return continue_msg();
 			};
 
-			function_node<double, continue_msg, rejecting> printer(g, unlimited, print_result);
+			function_node<double, continue_msg, queueing> printer(g, serial, print_result);
 
 			make_edge(meanimizer, printer);
 			make_edge(printer, limiter.decrement);
@@ -168,7 +168,7 @@ int main(int argc, char **argv)
 				return continue_msg();
 			};
 
-		function_node<double, continue_msg, rejecting> printer(g, unlimited, print_result);
+		function_node<double, continue_msg, queueing> printer(g, serial, print_result);
 
 		make_edge(meanimizer, printer);
 		make_edge(printer, limiter.decrement);
